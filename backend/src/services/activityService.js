@@ -1,5 +1,5 @@
 import Activity from '../models/Activity.js'
-import { calculateCO2, getActivityConfig, validateActivityInput, detectUnusualInput, getCurrentWeekRange, getDefaultTarget } from '../utils/helpers.js'
+import { calculateCO2, getActivityConfig, validateActivityInput, detectUnusualInput, getCurrentWeekRange, getDefaultTarget, getStoredSettings } from '../utils/helpers.js'
 
 export async function createActivityService(payload) {
   const config = getActivityConfig(payload.activityType)
@@ -83,7 +83,8 @@ export async function getDashboardWeeklyService() {
   }).lean()
 
   const totalCO2 = activities.reduce((sum, item) => sum + Number(item.co2 || 0), 0)
-  const weeklyTarget = getDefaultTarget()
+  const settings = await getStoredSettings()
+  const weeklyTarget = settings.weeklyTarget ?? getDefaultTarget()
   const remaining = weeklyTarget - totalCO2
   const targetExceeded = totalCO2 > weeklyTarget
 
@@ -137,8 +138,10 @@ export async function getDashboardWeeklyService() {
 }
 
 export async function getSettingsService() {
+  const settings = await getStoredSettings()
+
   return {
-    weeklyTarget: getDefaultTarget(),
+    weeklyTarget: settings.weeklyTarget ?? getDefaultTarget(),
   }
 }
 
@@ -148,6 +151,10 @@ export async function updateSettingsService(payload = {}) {
   if (!Number.isFinite(nextTarget) || nextTarget < 0) {
     throw Object.assign(new Error('weeklyTarget must be a valid non-negative number.'), { statusCode: 400 })
   }
+
+  const settings = await getStoredSettings()
+  settings.weeklyTarget = Number(nextTarget.toFixed(2))
+  await settings.save()
 
   return {
     weeklyTarget: Number(nextTarget.toFixed(2)),

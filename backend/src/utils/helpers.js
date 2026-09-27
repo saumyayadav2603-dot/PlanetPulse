@@ -1,4 +1,18 @@
+import Settings from '../models/Settings.js'
 import { ACTIVITY_LOOKUP, CATEGORY_ORDER, DEFAULT_WEEKLY_TARGET, USUAL_INPUT_THRESHOLDS } from '../config/constants.js'
+
+export async function getStoredSettings() {
+  const settings = await Settings.findOne({ name: 'planetpulse' })
+
+  if (settings) {
+    return settings
+  }
+
+  return Settings.create({
+    name: 'planetpulse',
+    weeklyTarget: DEFAULT_WEEKLY_TARGET,
+  })
+}
 
 export function toNumber(value) {
   return Number(value)
