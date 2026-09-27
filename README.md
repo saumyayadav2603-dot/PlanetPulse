@@ -1,10 +1,6 @@
 
 
 Readme · MD
-<p align="center">
-  <img src="./assets/![Uploading logo.png…]()
-" alt="PlanetPulse logo" width="140"/>
-</p>
 <h1 align="center">PlanetPulse</h1>
 <p align="center"><i>Know your footprint. Shape your choices.</i></p>
 
@@ -231,7 +227,7 @@ Contributions are welcome.
  
 ## Hackathon Context
  
-PlanetPulse was developed during a 5-hour hackathon conducted by [Azisly.ai](./Azisly.ai), with a focus on building a functional, reliable, and user-friendly climate-tech solution.
+PlanetPulse was developed during a 5-hour hackathon conducted by [[Azisly.ai](./Azisly.ai)](https://azisly.ai/dashboard)], with a focus on building a functional, reliable, and user-friendly climate-tech solution.
  
 ## Acknowledgements
  
@@ -240,7 +236,7 @@ PlanetPulse was developed during a 5-hour hackathon conducted by [Azisly.ai](./A
 - Charts: [Recharts](https://recharts.org)
 - Hosting: [Vercel](https://vercel.com)
 
-- Special thanks to [Azisly.ai](./Azisly.ai) for organizing the hackathon and providing the opportunity to build, innovate, and collaborate under real-world time constraints.
+- Special thanks to [[Azisly.ai](./Azisly.ai)](https://azisly.ai/dashboard)] for organizing the hackathon and providing the opportunity to build, innovate, and collaborate under real-world time constraints.
 ---
  
 <p align="center">Made with 🌍 by the PlanetPulse team</p>
