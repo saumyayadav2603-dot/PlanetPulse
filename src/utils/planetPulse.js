@@ -67,8 +67,28 @@ export function getCurrentWeekRange(date = new Date()) {
   return { start, end }
 }
 
+export function getPreviousWeekRange(date = new Date()) {
+  const currentWeek = getCurrentWeekRange(date)
+  const previousStart = new Date(currentWeek.start)
+  previousStart.setDate(currentWeek.start.getDate() - 7)
+
+  const previousEnd = new Date(currentWeek.end)
+  previousEnd.setDate(currentWeek.end.getDate() - 7)
+
+  return { start: previousStart, end: previousEnd }
+}
+
 export function getWeeklyActivities(activities, date = new Date()) {
   const { start, end } = getCurrentWeekRange(date)
+
+  return activities.filter((activity) => {
+    const timestamp = new Date(activity.timestamp)
+    return timestamp >= start && timestamp <= end
+  })
+}
+
+export function getPreviousWeekActivities(activities, date = new Date()) {
+  const { start, end } = getPreviousWeekRange(date)
 
   return activities.filter((activity) => {
     const timestamp = new Date(activity.timestamp)
@@ -81,6 +101,36 @@ export function getWeeklyTotal(activities, date = new Date()) {
     (sum, activity) => sum + Number(activity.co2 || 0),
     0,
   )
+}
+
+export function getPreviousWeekTotal(activities, date = new Date()) {
+  return getPreviousWeekActivities(activities, date).reduce(
+    (sum, activity) => sum + Number(activity.co2 || 0),
+    0,
+  )
+}
+
+export function getDailyTotals(activities, date = new Date()) {
+  const { start } = getCurrentWeekRange(date)
+  const totals = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(start)
+    day.setDate(start.getDate() + index)
+
+    return {
+      key: day.toISOString(),
+      label: day.toLocaleDateString('en-US', { weekday: 'short' }),
+      date: day,
+      value: 0,
+    }
+  })
+
+  for (const activity of getWeeklyActivities(activities, date)) {
+    const activityDate = new Date(activity.timestamp)
+    const dayIndex = (activityDate.getDay() + 6) % 7
+    totals[dayIndex].value = Number((totals[dayIndex].value + Number(activity.co2 || 0)).toFixed(2))
+  }
+
+  return totals
 }
 
 export function getCategoryBreakdown(activities, date = new Date()) {

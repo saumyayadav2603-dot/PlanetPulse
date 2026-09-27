@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import {
   Activity,
+  ArrowDownRight,
+  ArrowUpRight,
   BarChart3,
   Bus,
   CalendarRange,
@@ -11,6 +13,7 @@ import {
   Leaf,
   Plane,
   Plus,
+  Sparkles,
   Trash2,
   Utensils,
   Zap,
@@ -26,7 +29,9 @@ import {
   formatTime,
   getCategoryBreakdown,
   getCurrentWeekRange,
+  getDailyTotals,
   getDefaultTarget,
+  getPreviousWeekTotal,
   getWeeklyActivities,
   getWeeklyTotal,
   obtainActivityConfig,
@@ -66,12 +71,15 @@ function App() {
   const [pendingWarning, setPendingWarning] = useState(null)
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [activeNav, setActiveNav] = useState('Dashboard')
+  const chartSectionRef = useRef(null)
 
   const selectedActivityConfig = obtainActivityConfig(selectedActivity) || EMISSION_FACTORS[0]
   const weeklyActivities = useMemo(() => getWeeklyActivities(activities), [activities])
   const weeklyTotal = useMemo(() => getWeeklyTotal(activities), [activities])
+  const previousWeekTotal = useMemo(() => getPreviousWeekTotal(activities), [activities])
   const currentWeekRange = useMemo(() => getCurrentWeekRange(new Date()), [])
   const categoryBreakdown = useMemo(() => getCategoryBreakdown(activities), [activities])
+  const dailyTotals = useMemo(() => getDailyTotals(activities), [activities])
   const targetPercent = target > 0 ? (weeklyTotal / target) * 100 : 0
   const isOverTarget = weeklyTotal > target
   const remaining = target - weeklyTotal
@@ -80,6 +88,24 @@ function App() {
     return categoryBreakdown.reduce((largest, item) => (item.value > largest.value ? item : largest), categoryBreakdown[0])
   }, [categoryBreakdown])
   const visibleActivities = useMemo(() => filterActivities(activities, filters), [activities, filters])
+  const previousWeekChange = previousWeekTotal > 0 ? ((weeklyTotal - previousWeekTotal) / previousWeekTotal) * 100 : null
+  const lowestDay = useMemo(() => {
+    const filtered = dailyTotals.filter((day) => day.value > 0)
+    if (!filtered.length) return null
+    return filtered.reduce((lowest, day) => (day.value < lowest.value ? day : lowest), filtered[0])
+  }, [dailyTotals])
+
+  const pulseInsight = useMemo(() => {
+    if (!weeklyActivities.length) {
+      return 'Log your first activity to start understanding your footprint.'
+    }
+
+    if (!biggestCategory) {
+      return 'Your weekly footprint is still developing — log a few more activities to see the trend.'
+    }
+
+    return `${biggestCategory.name} is your largest contributor this week, accounting for ${Math.round((biggestCategory.value / weeklyTotal) * 100 || 0)}% of your footprint.`
+  }, [weeklyActivities.length, biggestCategory, weeklyTotal])
 
   useEffect(() => {
     writeStorage(STORAGE_KEYS.activities, activities)
@@ -162,6 +188,10 @@ function App() {
     ? `Weekly target exceeded. You've exceeded your weekly target by ${Math.abs(remaining).toFixed(2)} kg CO2e. You can continue logging activities. Review your largest contributing category to understand where most of your footprint came from.`
     : ''
 
+  const scrollToContributors = () => {
+    chartSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -201,12 +231,21 @@ function App() {
             <section className="hero-card card">
               <div className="hero-header">
                 <div>
+                  <p className="eyebrow calm">Good morning</p>
                   <p className="section-label">This week</p>
                   <div className="big-total">{formatKg(weeklyTotal)}</div>
                 </div>
-                <div className="week-chip">
-                  <CalendarRange size={16} />
-                  {formatDate(currentWeekRange.start)} – {formatDate(currentWeekRange.end)}
+                <div className="hero-meta">
+                  <div className="week-chip">
+                    <CalendarRange size={16} />
+                    {formatDate(currentWeekRange.start)} – {formatDate(currentWeekRange.end)}
+                  </div>
+                  {previousWeekTotal > 0 && previousWeekChange !== null && (
+                    <div className={`trend-pill ${previousWeekChange <= 0 ? 'trend-down' : 'trend-up'}`}>
+                      {previousWeekChange <= 0 ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
+                      {Math.abs(previousWeekChange).toFixed(1)}% vs previous week
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
@@ -232,31 +271,68 @@ function App() {
                   <div className="alert-box warning-box" role="alert">
                     <CircleAlert size={18} />
                     <div>
-                      <strong>Weekly target exceeded</strong>
+                      <strong>Weekly target crossed</strong>
                       <p>{targetWarningMessage}</p>
+                      <button type="button" className="inline-action" onClick={scrollToContributors}>View contributors</button>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="card">
-                <p className="section-label">Pulse Insight</p>
+              <div className="card insight-card">
+                <div className="section-header-row compact">
+                  <p className="section-label">Pulse Insight</p>
+                  <Sparkles size={16} className="sparkle" />
+                </div>
                 {weeklyActivities.length === 0 ? (
                   <div className="empty-inline">Log your first activity to start understanding your footprint.</div>
-                ) : biggestCategory ? (
+                ) : (
                   <>
-                    <h3>{biggestCategory.name} is your largest contributor this week.</h3>
+                    <h3>{pulseInsight}</h3>
                     <p className="meta-line">
-                      {biggestCategory.value.toFixed(2)} kg CO2e • {Math.round((biggestCategory.value / weeklyTotal) * 100 || 0)}% of your footprint
+                      {weeklyActivities.length} activities logged • {targetPercent >= 100 ? `${Math.abs(remaining).toFixed(2)} kg above target` : `${remaining.toFixed(2)} kg remaining before target`}
                     </p>
                   </>
-                ) : (
-                  <div className="empty-inline">No activities yet.</div>
                 )}
               </div>
             </section>
 
-            <section className="chart-card card">
+            <section className="summary-grid">
+              <div className="card summary-card">
+                <p className="section-label">Weekly recap</p>
+                <h3>Activities</h3>
+                <div className="metric-value">{weeklyActivities.length}</div>
+              </div>
+              <div className="card summary-card">
+                <p className="section-label">Largest category</p>
+                <h3>{biggestCategory ? biggestCategory.name : 'No data yet'}</h3>
+                <div className="metric-value">{biggestCategory ? `${biggestCategory.value.toFixed(2)} kg` : '—'}</div>
+              </div>
+              <div className="card summary-card">
+                <p className="section-label">Lowest-footprint day</p>
+                <h3>{lowestDay ? lowestDay.label : 'No data yet'}</h3>
+                <div className="metric-value">{lowestDay ? `${lowestDay.value.toFixed(2)} kg` : '—'}</div>
+              </div>
+            </section>
+
+            <section className="card seven-day-card">
+              <div className="section-header-row">
+                <p className="section-label">7-day footprint</p>
+              </div>
+              <div className="day-grid">
+                {dailyTotals.map((day) => (
+                  <div key={day.key} className="day-column">
+                    <div className="day-bar-wrap">
+                      <div className="day-bar" style={{ height: `${Math.max((day.value / Math.max(weeklyTotal || 1, 1)) * 100, day.value > 0 ? 12 : 6)}%` }} />
+                    </div>
+                    <div className="day-label">{day.label}</div>
+                    <div className="day-value">{day.value.toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section ref={chartSectionRef} className="chart-card card">
               <div className="section-header-row">
                 <p className="section-label">Category breakdown</p>
               </div>
@@ -264,8 +340,8 @@ function App() {
               {categoryBreakdown.length === 0 ? (
                 <div className="empty-box">
                   <BarChart3 size={32} />
-                  <p>No activities yet.</p>
-                  <small>Start by logging an everyday activity to see your carbon footprint.</small>
+                  <p>No chart data yet.</p>
+                  <small>Log a few activities to see where your footprint is coming from.</small>
                 </div>
               ) : (
                 <div className="chart-layout">
@@ -300,7 +376,7 @@ function App() {
                 <button type="button" className="link-button" onClick={() => setActiveNav('History')}>View History</button>
               </div>
               {activities.length === 0 ? (
-                <div className="empty-list">No activities yet.</div>
+                <div className="empty-list">No activities yet. Start by logging an everyday activity to see your carbon footprint.</div>
               ) : (
                 <div className="activity-list compact-list">
                   {activities.slice(0, 5).map((activity) => {
@@ -368,9 +444,14 @@ function App() {
             </div>
 
             <div className="calc-preview">
-              <span>{quantity || '0'} {selectedActivityConfig.unit}</span>
-              <span>× {selectedActivityConfig.emissionFactor} kg CO2/{selectedActivityConfig.unit}</span>
-              <strong>= {formatKg(calculateCO2(quantity || 0, selectedActivityConfig.emissionFactor))}</strong>
+              <div className="preview-row">
+                <span>{quantity || '0'} {selectedActivityConfig.unit}</span>
+                <span>× {selectedActivityConfig.emissionFactor} kg CO2/{selectedActivityConfig.unit}</span>
+              </div>
+              <div className="preview-row preview-total">
+                <span>Estimated footprint</span>
+                <strong>{formatKg(calculateCO2(quantity || 0, selectedActivityConfig.emissionFactor))}</strong>
+              </div>
             </div>
 
             <div className="form-actions">

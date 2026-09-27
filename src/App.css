@@ -118,6 +118,7 @@ h3 {
 
 .hero-card {
   margin-bottom: 22px;
+  padding: 28px 24px;
 }
 
 .hero-header {
@@ -128,8 +129,15 @@ h3 {
   flex-wrap: wrap;
 }
 
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
 .big-total {
-  font-size: clamp(2.4rem, 4vw, 4rem);
+  font-size: clamp(2.5rem, 5vw, 4.4rem);
   font-weight: 800;
   letter-spacing: -0.06em;
   color: #0d1f1a;
@@ -222,11 +230,34 @@ h3 {
   padding: 14px 16px;
 }
 
+.floating-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: rgba(15, 38, 30, 0.96);
+  color: white;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 12px 26px rgba(15, 38, 30, 0.18);
+  z-index: 30;
+  font-weight: 600;
+}
+
 .alert-box {
   display: flex;
   gap: 12px;
   align-items: flex-start;
   margin-top: 16px;
+}
+
+.inline-action {
+  margin-top: 10px;
+  background: transparent;
+  border: none;
+  color: #1a6b4d;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 700;
 }
 
 .warning-box {
@@ -443,8 +474,7 @@ h3 {
 
 .calc-preview {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 10px;
   background: #f4faf6;
   border: 1px solid #dfece3;
@@ -452,6 +482,18 @@ h3 {
   border-radius: 14px;
   margin-top: 8px;
   color: #1d3934;
+}
+
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.preview-total {
+  padding-top: 8px;
+  border-top: 1px solid rgba(26, 107, 77, 0.12);
 }
 
 .form-actions,
@@ -505,6 +547,74 @@ h3 {
 
 .empty-inline {
   min-height: 80px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.summary-card {
+  min-height: 150px;
+}
+
+.metric-value {
+  margin-top: 12px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #112822;
+}
+
+.seven-day-card {
+  margin-bottom: 22px;
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  min-height: 170px;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+}
+
+.day-bar-wrap {
+  width: 100%;
+  height: 110px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(140, 199, 161, 0.12), rgba(140, 199, 161, 0.02));
+  border-radius: 18px 18px 12px 12px;
+  padding: 8px;
+}
+
+.day-bar {
+  width: 100%;
+  background: linear-gradient(180deg, #7ac59a 0%, #2f8f65 100%);
+  border-radius: 12px 12px 8px 8px;
+  min-height: 10px;
+  transition: height 0.2s ease;
+}
+
+.day-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #446555;
+}
+
+.day-value {
+  font-size: 0.72rem;
+  color: #254336;
 }
 
 .target-card {
