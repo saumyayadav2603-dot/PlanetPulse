@@ -2,15 +2,15 @@
 
 Readme · MD
 <p align="center">
-  <img src="<img width="1035" height="296" alt="Screenshot 2026-09-27 152714" src="https://github.com/user-attachments/assets/cfdfe910-8996-4fe1-8f3e-cab5afa96447"
+  <img src="./assets/![Uploading logo.png…]()
 " alt="PlanetPulse logo" width="140"/>
 </p>
 <h1 align="center">PlanetPulse</h1>
 <p align="center"><i>Know your footprint. Shape your choices.</i></p>
+
 <p align="center">
   <a href="https://github.com/saumyayadav2603-dot/PlanetPulse/stargazers"><img src="https://img.shields.io/github/stars/saumyayadav2603-dot/PlanetPulse?style=flat" alt="stars"/></a>
   <a href="https://github.com/saumyayadav2603-dot/PlanetPulse/issues"><img src="https://img.shields.io/github/issues/saumyayadav2603-dot/PlanetPulse" alt="issues"/></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"/></a>
   <img src="https://img.shields.io/badge/React-Vite-blue" alt="stack"/>
   <img src="https://img.shields.io/badge/Node-Express%20%2B%20MongoDB-3EBD79" alt="backend stack"/>
 </p>
@@ -231,7 +231,7 @@ Contributions are welcome.
  
 ## Hackathon Context
  
-PlanetPulse was developed during a 5-hour hackathon conducted by Azisly.ai, with a focus on building a functional, reliable, and user-friendly climate-tech solution.
+PlanetPulse was developed during a 5-hour hackathon conducted by [Azisly.ai](./Azisly.ai), with a focus on building a functional, reliable, and user-friendly climate-tech solution.
  
 ## Acknowledgements
  
@@ -240,7 +240,7 @@ PlanetPulse was developed during a 5-hour hackathon conducted by Azisly.ai, with
 - Charts: [Recharts](https://recharts.org)
 - Hosting: [Vercel](https://vercel.com)
 
-- Special thanks to Azisly.ai for organizing the hackathon and providing the opportunity to build, innovate, and collaborate under real-world time constraints.
+- Special thanks to [Azisly.ai](./Azisly.ai) for organizing the hackathon and providing the opportunity to build, innovate, and collaborate under real-world time constraints.
 ---
  
 <p align="center">Made with 🌍 by the PlanetPulse team</p>
