@@ -2,7 +2,7 @@
 
 Readme · MD
 <p align="center">
-  <img src="<img width="1035" height="296" alt="Screenshot 2026-09-27 152714" src="https://github.com/user-attachments/assets/cfdfe910-8996-4fe1-8f3e-cab5afa96447" />
+  <img src="<img width="1035" height="296" alt="Screenshot 2026-09-27 152714" src="https://github.com/user-attachments/assets/cfdfe910-8996-4fe1-8f3e-cab5afa96447"
 " alt="PlanetPulse logo" width="140"/>
 </p>
 <h1 align="center">PlanetPulse</h1>
@@ -15,7 +15,7 @@ Readme · MD
   <img src="https://img.shields.io/badge/Node-Express%20%2B%20MongoDB-3EBD79" alt="backend stack"/>
 </p>
 <p align="center">
-  🔗 <a href="[https://planetpulse.vercel.app](https://planet-pulse-liart.vercel.app/)">Live Demo</a> ·
+  🔗 <a href="https://planet-pulse-liart.vercel.app/">Live Demo</a> ·
   🎥 <a href="https://youtu.be/your-video-id">Demo Video</a> ·
   💻 <a href="https://github.com/saumyayadav2603-dot/PlanetPulse">GitHub Repo</a>
 </p>
@@ -23,10 +23,10 @@ Readme · MD
  
 ## Team
  
-| Name | Role | GitHub | 
-|---|---|---|---|
 | Saumya Yadav | Leader &  Developer | [@saumyayadav2603-dot](https://github.com/saumyayadav2603-dot) | 
+
 | Riya Raj Singh | Frontend development | (https://github.com/anishral) |
+
 | Anmol Roy | Backend development | (https://github.com/Trinity-ops-ux)
  
  
