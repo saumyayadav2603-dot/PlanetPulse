@@ -14,7 +14,7 @@ Readme · MD
 </p>
 <p align="center">
   🔗 <a href="https://planet-pulse-liart.vercel.app/">Live Demo</a> ·
-  🎥 <a href="https://youtu.be/your-video-id">Demo Video</a> ·
+  🎥 <a href="https://youtube.com/shorts/m4XL9Ml_US0">Demo Video</a> ·
   💻 <a href="https://github.com/saumyayadav2603-dot/PlanetPulse">GitHub Repo</a>
 </p>
 
