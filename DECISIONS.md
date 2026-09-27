@@ -4,47 +4,56 @@
 
 Choice: Warn + encourage, never block.
 
-When a user exceeds their weekly target, PlanetPulse shows a visible warning message instead of stopping them from continuing. The app keeps logging enabled because a carbon-tracking tool is more valuable when it records real behavior than when it prevents users from entering data. The warning explains the overage and nudges the user to review the largest contribution category without shaming or penalizing them.
+When a user exceeds their weekly target, PlanetPulse shows a visible warning instead of stopping them from continuing. The app keeps logging enabled because a carbon-tracking product works best when it captures real behavior without shame or friction. The warning explains the overage and directs the user to the biggest contributor category without creating a punitive experience.
 
 Alternatives considered:
 
-- Block activity logging entirely: this would make the app feel punitive and could cause users to avoid using it when they need the most honest data.
-- Silent warning without explanation: this would be less actionable and less useful for behavior change.
+- Block activity logging entirely: this would make the tool feel punitive and increase the risk that users stop logging honestly.
+- Silent warning without context: this would be less useful and would not help the user understand the cause of the overage.
 
 Tradeoff:
 
-- The product stays encouraging and honest, even when a user is above target.
-- The dashboard remains informative rather than restrictive.
+- Users keep full control over their log entries while still receiving clear feedback.
+- The experience stays encouraging and informative rather than restrictive.
 
-Impact on user experience:
+Actual implementation:
 
-- Logging is never blocked, and the target status remains motivating rather than discouraging.
-- Users can continue to build a trustworthy record of their week while receiving guidance on where to adjust behavior.
+- The dashboard shows the current weekly total and target amount.
+- When the total exceeds the user target, it surfaces a warning and a “View contributors” action that scrolls to the category breakdown.
+- Logging remains enabled after the overage so the full week remains accurate.
 
 ## Decision 2 — Absurd Input
 
 Choice: Warn + require confirmation, but allow user override.
 
-PlanetPulse implements a threshold-based unusual-input check to catch values that are likely mistakes without assuming they are impossible. For example, a 5,000 km car trip may be unusual but can still be a real-world input. The app therefore does not silently reject or silently change the value. Instead, it shows a message that says the value looks unusually high and presents the user with the choice to edit it or log it anyway.
+PlanetPulse specifically checks for unusually large values rather than silently rejecting them. A value like 5,000 km is not automatically invalid, because it could reflect a long trip, a high-use event, or a legitimate data point. Silent rejection would feel arbitrary, and silent correction would quietly change the user’s record.
 
 Why this matters:
 
-- A silent rejection would make the product feel arbitrary and could hide real-world behavior.
-- A silent correction would alter the recorded data without user intent.
-- A real user might legitimately log a long trip or a high consumption event, and the system should never assume otherwise.
+- People can genuinely log large life events or unusual travel patterns.
+- A trusted carbon app should never silently alter the user’s entry.
+- The purpose is to catch mistakes without taking away human judgment.
 
-This is balanced with normal validation: empty values, negative values, zero, NaN, and infinite values are still rejected immediately. The unusual-input flow only applies to values that are possible but suspiciously large.
+Actual implementation:
+
+- The app validates empty values, zero, negative values, and non-numeric entries immediately.
+- For suspiciously large values, it shows an unusual-input warning and offers the user a choice to edit the entry or log it anyway.
+- This preserves the user’s intent while still protecting against accidental mistakes.
 
 ## Decision 3 — The Week
 
 Choice: Monday 00:00 to Sunday 23:59 in the user’s local timezone.
 
-PlanetPulse defines the active week dynamically using the local system date, anchored to Monday at 00:00 and Sunday at 23:59. This keeps the weekly model predictable and easy to understand. The date range is always displayed clearly in the dashboard so users can tell exactly which week they are looking at.
+PlanetPulse anchors the weekly model to Monday through Sunday in the current local date context. This matches how people naturally think about a week and keeps the dashboard easy to understand. The displayed date range is always shown so users know exactly which week they are viewing.
 
 Why this was chosen:
 
-- Monday–Sunday is a familiar and consistent weekly rhythm.
-- It makes the mental model simple: weekly targets reset on Monday and continue through Sunday.
-- Historical activities remain in the full activity log, but only those in the current local week contribute to the current weekly total and target progress.
+- Monday–Sunday provides a predictable rhythm for target resets and weekly comparisons.
+- It keeps the app aligned with real calendar behavior rather than an abstract rolling window.
+- Previous activities remain visible in History, but only entries that fall within the active local week are counted toward the current weekly total and target.
 
-This means old activities remain accessible in History without being accidentally counted in the current week. The app uses the local timezone instead of a hardcoded date range, which keeps the behavior aligned with the user’s actual calendar.
+Actual implementation:
+
+- The app calculates the current week range using the local date and the Monday offset logic.
+- The weekly total, target progress, and 7-day summary all use that local week window.
+- Historical entries remain available without being accidentally counted in the current week.

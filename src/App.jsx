@@ -39,6 +39,7 @@ import {
   validateActivity,
   writeStorage,
 } from './utils/planetPulse.js'
+import { createActivity, getActivities, getSettings, getWeeklyDashboard } from './services/api.js'
 
 const STORAGE_KEYS = {
   activities: 'planetpulse-activities',
@@ -71,6 +72,13 @@ function App() {
   const [pendingWarning, setPendingWarning] = useState(null)
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [activeNav, setActiveNav] = useState('Dashboard')
+  const [showCalcDetails, setShowCalcDetails] = useState(false)
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null)
+  const [whatIf, setWhatIf] = useState({
+    from: EMISSION_FACTORS[0].id,
+    to: EMISSION_FACTORS[1].id,
+    quantity: '10',
+  })
   const chartSectionRef = useRef(null)
 
   const selectedActivityConfig = obtainActivityConfig(selectedActivity) || EMISSION_FACTORS[0]
@@ -107,6 +115,115 @@ function App() {
     return `${biggestCategory.name} is your largest contributor this week, accounting for ${Math.round((biggestCategory.value / weeklyTotal) * 100 || 0)}% of your footprint.`
   }, [weeklyActivities.length, biggestCategory, weeklyTotal])
 
+  const patternInsights = useMemo(() => {
+    const insights = []
+
+    if (!weeklyActivities.length) {
+      return insights
+    }
+
+    if (biggestCategory) {
+      insights.push(`${biggestCategory.name} dominates your footprint this week.`)
+    }
+
+    const highestDay = dailyTotals.reduce((highest, day) => (day.value > highest.value ? day : highest), dailyTotals[0])
+    if (highestDay && highestDay.value > 0) {
+      insights.push(`${highestDay.label} was your highest-footprint day.`)
+    }
+
+    const activeDays = dailyTotals.filter((day) => day.value > 0).length
+    if (activeDays > 0) {
+      insights.push(`You logged activities on ${activeDays} of the last 7 days.`)
+    }
+
+    if (categoryBreakdown.length >= 2) {
+      const topTwo = categoryBreakdown.slice(0, 2).reduce((sum, category) => sum + category.value, 0)
+      const share = weeklyTotal > 0 ? (topTwo / weeklyTotal) * 100 : 0
+      insights.push(`Your top two categories account for ${share.toFixed(0)}% of your weekly footprint.`)
+    }
+
+    return insights.slice(0, 3)
+  }, [weeklyActivities.length, biggestCategory, dailyTotals, categoryBreakdown, weeklyTotal])
+
+  const milestones = useMemo(() => {
+    const items = [
+      { label: 'First activity', reached: activities.length >= 1 },
+      { label: '10 activities', reached: activities.length >= 10 },
+      { label: '3-day streak', reached: dailyTotals.filter((day) => day.value > 0).length >= 3 },
+    ]
+
+    return items
+  }, [activities.length, dailyTotals])
+
+  const weeklyStory = useMemo(() => {
+    if (!weeklyActivities.length) {
+      return 'No activities logged yet. Start by logging a regular daily activity to begin building your weekly footprint story.'
+    }
+
+    const remainingBeforeTarget = Math.max(target - weeklyTotal, 0)
+    const contributorPercent = biggestCategory && weeklyTotal > 0 ? (biggestCategory.value / weeklyTotal) * 100 : 0
+    const lowestDay = dailyTotals.filter((day) => day.value > 0).reduce((lowest, day) => (day.value < lowest.value ? day : lowest), dailyTotals.find((day) => day.value > 0) || { value: 0, label: '—' })
+
+    return `You logged ${weeklyActivities.length} activities this week, producing ${formatKg(weeklyTotal)}. ${biggestCategory ? `${biggestCategory.name} was your largest contributor at ${contributorPercent.toFixed(0)}%.` : ''} ${lowestDay && lowestDay.label ? `${lowestDay.label} was your lowest-footprint day.` : ''} ${target > 0 ? `You have ${remainingBeforeTarget.toFixed(1)} kg CO2e remaining before reaching your weekly target.` : ''}`.trim()
+  }, [weeklyActivities.length, weeklyTotal, biggestCategory, dailyTotals, target])
+
+  const whatIfConfigFrom = obtainActivityConfig(whatIf.from) || EMISSION_FACTORS[0]
+  const whatIfConfigTo = obtainActivityConfig(whatIf.to) || EMISSION_FACTORS[1]
+  const whatIfQuantity = Number(whatIf.quantity) || 0
+  const whatIfCurrent = calculateCO2(whatIfQuantity, whatIfConfigFrom.emissionFactor)
+  const whatIfAlternative = calculateCO2(whatIfQuantity, whatIfConfigTo.emissionFactor)
+  const whatIfDifference = Number((whatIfAlternative - whatIfCurrent).toFixed(2))
+
+  useEffect(() => {
+    let cancelled = false
+
+    const hydrateFromBackend = async () => {
+      try {
+        const [settingsResponse, dashboardResponse, activitiesResponse] = await Promise.all([
+          getSettings(),
+          getWeeklyDashboard(),
+          getActivities(),
+        ])
+
+        if (cancelled) {
+          return
+        }
+
+        const serverTarget = Number(settingsResponse?.weeklyTarget)
+        const localTarget = readStorage(STORAGE_KEYS.target, getDefaultTarget())
+
+        if (Number.isFinite(serverTarget) && serverTarget > 0 && (!localTarget || Number(localTarget) === getDefaultTarget())) {
+          setTarget(serverTarget)
+          setTargetInput(String(serverTarget))
+        }
+
+        if (!readStorage(STORAGE_KEYS.activities, [])?.length && Array.isArray(activitiesResponse) && activitiesResponse.length) {
+          const normalizedActivities = activitiesResponse.map((activity) => ({
+            ...activity,
+            id: activity.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            activityType: activity.activityType,
+            timestamp: activity.timestamp || new Date().toISOString(),
+          }))
+
+          setActivities(normalizedActivities)
+        }
+
+        if (dashboardResponse?.weeklyTarget && !isOverTarget) {
+          setTarget(Number(dashboardResponse.weeklyTarget))
+          setTargetInput(String(dashboardResponse.weeklyTarget))
+        }
+      } catch {
+        // Intentionally ignore backend read failures and keep the existing localStorage app behavior.
+      }
+    }
+
+    hydrateFromBackend()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   useEffect(() => {
     writeStorage(STORAGE_KEYS.activities, activities)
   }, [activities])
@@ -115,7 +232,7 @@ function App() {
     writeStorage(STORAGE_KEYS.target, target)
   }, [target])
 
-  const handleAddActivity = () => {
+  const handleAddActivity = async () => {
     const validation = validateActivity(selectedActivity, quantity)
 
     if (!validation.valid) {
@@ -139,14 +256,14 @@ function App() {
       return
     }
 
-    appendActivity(numericQuantity)
+    await appendActivity(numericQuantity)
   }
 
-  const appendActivity = (numericQuantity) => {
+  const appendActivity = async (numericQuantity) => {
     const config = obtainActivityConfig(selectedActivity)
     const calculatedCo2 = calculateCO2(numericQuantity, config.emissionFactor)
 
-    const newActivity = {
+    const fallbackActivity = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       activityType: selectedActivity,
       category: config.category,
@@ -157,11 +274,27 @@ function App() {
       timestamp: new Date().toISOString(),
     }
 
-    setActivities((prev) => [newActivity, ...prev])
-    setQuantity('')
-    setError('')
-    setMessage('Activity logged successfully.')
-    setPendingWarning(null)
+    try {
+      const backendActivity = await createActivity({
+        activityType: config.name,
+        quantity: numericQuantity,
+      })
+
+      const nextActivities = [...activities, { ...fallbackActivity, ...backendActivity, id: backendActivity.id || fallbackActivity.id }]
+      setActivities((prev) => [{ ...fallbackActivity, ...backendActivity, id: backendActivity.id || fallbackActivity.id }, ...prev])
+      setQuantity('')
+      setError('')
+      setMessage(`${config.name} · ${numericQuantity} ${config.unit} • +${Number(backendActivity.co2 ?? calculatedCo2).toFixed(2)} kg CO2e • Weekly total ${formatKg(getWeeklyTotal(nextActivities))}`)
+      setPendingWarning(null)
+      return
+    } catch {
+      const nextActivities = [...activities, fallbackActivity]
+      setActivities((prev) => [fallbackActivity, ...prev])
+      setQuantity('')
+      setError('')
+      setMessage(`${config.name} · ${numericQuantity} ${config.unit} • +${calculatedCo2.toFixed(2)} kg CO2e • Weekly total ${formatKg(getWeeklyTotal(nextActivities))}`)
+      setPendingWarning(null)
+    }
   }
 
   const handleTargetSubmit = (event) => {
@@ -196,8 +329,26 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-row">
-          <div className="brand-mark"><Leaf size={18} /></div>
-          <div className="brand-name">PlanetPulse</div>
+          <div className="brand-lockup" aria-label="PlanetPulse brand logo">
+            <div className="brand-mark" aria-hidden="true">
+              <div className="globe-shell">
+                <span className="meridian meridian-one" />
+                <span className="meridian meridian-two" />
+                <span className="meridian meridian-three" />
+                <svg className="pulse-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M7 50 C18 50, 18 32, 29 32 S42 50, 52 50 S64 69, 75 69 S87 50, 93 50" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="brand-wordmark" aria-label="PlanetPulse brand name">
+              <div className="word-row">
+                <span className="planet-word">Planet</span>
+                <span className="pulse-word">Pulse</span>
+              </div>
+              <div className="brand-tagline">Know your footprint. Shape your choices.</div>
+            </div>
+          </div>
         </div>
 
         <nav className="nav" aria-label="Main navigation">
@@ -313,6 +464,91 @@ function App() {
                 <h3>{lowestDay ? lowestDay.label : 'No data yet'}</h3>
                 <div className="metric-value">{lowestDay ? `${lowestDay.value.toFixed(2)} kg` : '—'}</div>
               </div>
+            </section>
+
+            <section className="card pattern-card">
+              <div className="section-header-row">
+                <p className="section-label">Your Footprint Patterns</p>
+              </div>
+              {patternInsights.length === 0 ? (
+                <div className="empty-inline">Log a few activities to generate your personal patterns.</div>
+              ) : (
+                <ul className="pattern-list">
+                  {patternInsights.map((insight) => (
+                    <li key={insight}>{insight}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section className="card whatif-card">
+              <div className="section-header-row">
+                <p className="section-label">What If?</p>
+              </div>
+              <div className="compare-grid">
+                <div className="field-group compact-field">
+                  <label htmlFor="compareFrom">Current</label>
+                  <select id="compareFrom" value={whatIf.from} onChange={(event) => setWhatIf((prev) => ({ ...prev, from: event.target.value }))}>
+                    {EMISSION_FACTORS.map((activity) => (
+                      <option key={activity.id} value={activity.id}>{activity.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field-group compact-field">
+                  <label htmlFor="compareTo">Compare with</label>
+                  <select id="compareTo" value={whatIf.to} onChange={(event) => setWhatIf((prev) => ({ ...prev, to: event.target.value }))}>
+                    {EMISSION_FACTORS.map((activity) => (
+                      <option key={activity.id} value={activity.id}>{activity.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field-group compact-field">
+                  <label htmlFor="compareQuantity">Distance / quantity</label>
+                  <input
+                    id="compareQuantity"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={whatIf.quantity}
+                    onChange={(event) => setWhatIf((prev) => ({ ...prev, quantity: event.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="compare-summary">
+                <div>
+                  <strong>{whatIfConfigFrom.name}</strong>
+                  <span>{whatIfQuantity} {whatIfConfigFrom.unit}</span>
+                  <em>{formatKg(whatIfCurrent)}</em>
+                </div>
+                <div>
+                  <strong>{whatIfConfigTo.name}</strong>
+                  <span>{whatIfQuantity} {whatIfConfigTo.unit}</span>
+                  <em>{formatKg(whatIfAlternative)}</em>
+                </div>
+              </div>
+              <p className="comparison-callout">Difference: {Math.abs(whatIfDifference).toFixed(2)} kg CO2e</p>
+              <p className="meta-line">Same distance. Different footprint.</p>
+            </section>
+
+            <section className="card milestone-card">
+              <div className="section-header-row">
+                <p className="section-label">Milestones</p>
+              </div>
+              <div className="milestone-list">
+                {milestones.map((item) => (
+                  <div key={item.label} className={`milestone-item ${item.reached ? 'done' : ''}`}>
+                    <span className="milestone-mark">{item.reached ? '✓' : '○'}</span>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="card story-card">
+              <div className="section-header-row">
+                <p className="section-label">Your week at a glance</p>
+              </div>
+              <p className="story-copy">{weeklyStory}</p>
             </section>
 
             <section className="card seven-day-card">
@@ -452,6 +688,18 @@ function App() {
                 <span>Estimated footprint</span>
                 <strong>{formatKg(calculateCO2(quantity || 0, selectedActivityConfig.emissionFactor))}</strong>
               </div>
+              <button type="button" className="inline-link" onClick={() => setShowCalcDetails((prev) => !prev)}>
+                {showCalcDetails ? 'Hide calculation' : 'How is this calculated?'}
+              </button>
+              {showCalcDetails && (
+                <div className="calc-detail-box">
+                  <p><strong>Calculation</strong></p>
+                  <p>Quantity: {quantity || '0'} {selectedActivityConfig.unit}</p>
+                  <p>Emission factor: {selectedActivityConfig.emissionFactor} kg CO2/{selectedActivityConfig.unit}</p>
+                  <p>Formula: {quantity || '0'} × {selectedActivityConfig.emissionFactor}</p>
+                  <p>= {formatKg(calculateCO2(quantity || 0, selectedActivityConfig.emissionFactor))}</p>
+                </div>
+              )}
             </div>
 
             <div className="form-actions">
@@ -547,14 +795,29 @@ function App() {
                 </div>
                 {visibleActivities.map((activity) => {
                   const config = obtainActivityConfig(activity.activityType)
+                  const isExpanded = expandedHistoryId === activity.id
                   return (
-                    <div className="history-row" key={activity.id}>
-                      <span>{config?.name || 'Activity'}</span>
-                      <span>{config?.category || activity.category}</span>
-                      <span>{activity.quantity} {activity.unit}</span>
-                      <span>{formatKg(activity.co2)}</span>
-                      <span>{formatDate(activity.timestamp)}</span>
-                      <span>{formatTime(activity.timestamp)}</span>
+                    <div key={activity.id}>
+                      <div className="history-row">
+                        <span>{config?.name || 'Activity'}</span>
+                        <span>{config?.category || activity.category}</span>
+                        <span>{activity.quantity} {activity.unit}</span>
+                        <span>{formatKg(activity.co2)}</span>
+                        <span>{formatDate(activity.timestamp)}</span>
+                        <span>
+                          <button type="button" className="inline-history-toggle" onClick={() => setExpandedHistoryId(isExpanded ? null : activity.id)}>
+                            {isExpanded ? 'Hide' : 'Details'}
+                          </button>
+                        </span>
+                      </div>
+                      {isExpanded && (
+                        <div className="history-detail-box">
+                          <p><strong>{config?.name || 'Activity'}:</strong> {activity.quantity} {activity.unit}</p>
+                          <p>Emission factor used: {activity.emissionFactor} kg CO2/{activity.unit}</p>
+                          <p>Calculation: {activity.quantity} × {activity.emissionFactor} = {formatKg(activity.co2)}</p>
+                          <p>Date: {formatDate(activity.timestamp)} • Time: {formatTime(activity.timestamp)}</p>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
