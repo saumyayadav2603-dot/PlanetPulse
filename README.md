@@ -15,7 +15,7 @@ Readme · MD
   🎥 <a href="https://youtu.be/your-video-id">Demo Video</a> ·
   💻 <a href="https://github.com/saumyayadav2603-dot/PlanetPulse">GitHub Repo</a>
 </p>
----
+
  
 ## Team
  
@@ -227,7 +227,7 @@ Contributions are welcome.
  
 ## Hackathon Context
  
-PlanetPulse was developed during a 5-hour hackathon conducted by [[Azisly.ai](./Azisly.ai)](https://azisly.ai/dashboard)], with a focus on building a functional, reliable, and user-friendly climate-tech solution.
+PlanetPulse was developed during a 5-hour hackathon conducted by [[Azisly.ai](https://azisly.ai/dashboard)], with a focus on building a functional, reliable, and user-friendly climate-tech solution.
  
 ## Acknowledgements
  
@@ -236,7 +236,7 @@ PlanetPulse was developed during a 5-hour hackathon conducted by [[Azisly.ai](./
 - Charts: [Recharts](https://recharts.org)
 - Hosting: [Vercel](https://vercel.com)
 
-- Special thanks to [[Azisly.ai](./Azisly.ai)](https://azisly.ai/dashboard)] for organizing the hackathon and providing the opportunity to build, innovate, and collaborate under real-world time constraints.
+- Special thanks to [[Azisly.ai](https://azisly.ai/dashboard)] for organizing the hackathon and providing the opportunity to build, innovate, and collaborate under real-world time constraints.
 ---
  
 <p align="center">Made with 🌍 by the PlanetPulse team</p>
